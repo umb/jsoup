@@ -97,6 +97,21 @@ public class Cleaner {
     }
 
 
+    /**
+     * Parses the html-string and returns all parse errors
+     *
+     * @param html
+     *
+     * @return List of parse-errors
+     */
+    public ParseErrorList checkForParseErrors(String html) {
+        Document clean = Document.createShell("");
+        Document dirty = Document.createShell("");
+        ParseErrorList errorList = ParseErrorList.tracking(1);
+        List<Node> nodes = Parser.parseFragment(html, dirty.body(), "", errorList);
+        return errorList;
+    }
+
     private int copySafeNodes(Element source, Element dest) {
         return copySafeNodes(source, dest, new CleaningResult());
     }
