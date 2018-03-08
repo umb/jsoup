@@ -200,7 +200,18 @@ public class Jsoup {
         return clean.getCleanedDocument().body().html();
     }
 
-    private static CleaningResult cleanWithDetailedFeedback(String bodyHtml, String baseUri, Whitelist whitelist) {
+    /**
+     Get safe HTML from untrusted input HTML, by parsing input HTML and filtering it through a white-list of permitted
+     tags and attributes. Additionally, it returns a detailed feedback with all elements and attributes removed during cleaning.
+
+     @param bodyHtml  input untrusted HTML (body fragment)
+     @param baseUri   URL to resolve relative URLs against
+     @param whitelist white-list of permitted HTML elements
+     @return CleaningResult which contains the safe HTML document and the removed nodes and attributes
+
+     @see Cleaner#clean(Document)
+     */
+    public static CleaningResult cleanWithDetailedFeedback(String bodyHtml, String baseUri, Whitelist whitelist) {
         Document dirty = parseBodyFragment(bodyHtml, baseUri);
         Cleaner cleaner = new Cleaner(whitelist);
         return cleaner.clean(dirty);
@@ -222,11 +233,11 @@ public class Jsoup {
 
     /**
      Get safe HTML from untrusted input HTML, by parsing input HTML and filtering it through a white-list of permitted
-     tags and attributes. And get a detailed Feedback which Elements and Attributes are removed inside the CleaningResult
+     tags and attributes. Additionally, it returns a detailed feedback with all elements and attributes removed during cleaning.
 
      @param bodyHtml  input untrusted HTML (body fragment)
      @param whitelist white-list of permitted HTML elements
-     @return CleaningResult which contains the safe HTML Document and the removed Nodes and Attributes
+     @return CleaningResult which contains the safe HTML document and the removed nodes and attributes
 
      @see Cleaner#clean(Document)
      */
@@ -253,7 +264,22 @@ public class Jsoup {
         return clean.getCleanedDocument().body().html();
     }
 
-    private static CleaningResult cleanWithDetailedFeedback(String bodyHtml, String baseUri, Whitelist whitelist, Document.OutputSettings outputSettings) {
+    /**
+     * Get safe HTML from untrusted input HTML, by parsing input HTML and filtering it through a white-list of
+     * permitted tags and attributes. Additionally, it returns a detailed feedback with all elements and attributes removed during cleaning.
+     *
+     * <p>The HTML is treated as a body fragment; it's expected the cleaned HTML will be used within the body of an
+     * existing document. If you want to clean full documents, use {@link Cleaner#clean(Document)} instead, and add
+     * structural tags (<code>html, head, body</code> etc) to the whitelist.
+     *
+     * @param bodyHtml input untrusted HTML (body fragment)
+     * @param baseUri URL to resolve relative URLs against
+     * @param whitelist white-list of permitted HTML elements
+     * @param outputSettings document output settings; use to control pretty-printing and entity escape modes
+     * @return CleaningResult which contains the safe HTML document and the removed nodes and attributes
+     * @see Cleaner#clean(Document)
+     */
+    public static CleaningResult cleanWithDetailedFeedback(String bodyHtml, String baseUri, Whitelist whitelist, Document.OutputSettings outputSettings) {
         CleaningResult clean = cleanWithDetailedFeedback(bodyHtml, baseUri, whitelist);
         clean.getCleanedDocument().outputSettings(outputSettings);
         return clean;
@@ -266,10 +292,10 @@ public class Jsoup {
      @param bodyHtml HTML to test
      @param whitelist whitelist to test against
      @return true if no tags or attributes were removed; false otherwise
-     @see #clean(String, org.jsoup.safety.Whitelist) 
+     @see #clean(String, org.jsoup.safety.Whitelist)
      */
     public static boolean isValid(String bodyHtml, Whitelist whitelist) {
         return new Cleaner(whitelist).isValidBodyHtml(bodyHtml);
     }
-    
+
 }
