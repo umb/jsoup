@@ -3,6 +3,7 @@ package org.jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.parser.Parser;
 import org.jsoup.safety.Cleaner;
+import org.jsoup.safety.CleaningResult;
 import org.jsoup.safety.Whitelist;
 import org.jsoup.helper.DataUtil;
 import org.jsoup.helper.HttpConnection;
@@ -195,10 +196,14 @@ public class Jsoup {
      @see Cleaner#clean(Document)
      */
     public static String clean(String bodyHtml, String baseUri, Whitelist whitelist) {
+        CleaningResult clean = cleanWithDetailedFeedback(bodyHtml, baseUri, whitelist);
+        return clean.getCleanedDocument().body().html();
+    }
+
+    private static CleaningResult cleanWithDetailedFeedback(String bodyHtml, String baseUri, Whitelist whitelist) {
         Document dirty = parseBodyFragment(bodyHtml, baseUri);
         Cleaner cleaner = new Cleaner(whitelist);
-        Document clean = cleaner.clean(dirty);
-        return clean.body().html();
+        return cleaner.clean(dirty);
     }
 
     /**
@@ -216,6 +221,20 @@ public class Jsoup {
     }
 
     /**
+     Get safe HTML from untrusted input HTML, by parsing input HTML and filtering it through a white-list of permitted
+     tags and attributes. And get a detailed Feedback which Elements and Attributes are removed inside the CleaningResult
+
+     @param bodyHtml  input untrusted HTML (body fragment)
+     @param whitelist white-list of permitted HTML elements
+     @return CleaningResult which contains the safe HTML Document and the removed Nodes and Attributes
+
+     @see Cleaner#clean(Document)
+     */
+    public static CleaningResult cleanWithDetailedFeedback(String bodyHtml, Whitelist whitelist) {
+        return cleanWithDetailedFeedback(bodyHtml, "", whitelist);
+    }
+
+    /**
      * Get safe HTML from untrusted input HTML, by parsing input HTML and filtering it through a white-list of
      * permitted tags and attributes.
      * <p>The HTML is treated as a body fragment; it's expected the cleaned HTML will be used within the body of an
@@ -230,11 +249,14 @@ public class Jsoup {
      * @see Cleaner#clean(Document)
      */
     public static String clean(String bodyHtml, String baseUri, Whitelist whitelist, Document.OutputSettings outputSettings) {
-        Document dirty = parseBodyFragment(bodyHtml, baseUri);
-        Cleaner cleaner = new Cleaner(whitelist);
-        Document clean = cleaner.clean(dirty);
-        clean.outputSettings(outputSettings);
-        return clean.body().html();
+        CleaningResult clean = cleanWithDetailedFeedback(bodyHtml, baseUri, whitelist, outputSettings);
+        return clean.getCleanedDocument().body().html();
+    }
+
+    private static CleaningResult cleanWithDetailedFeedback(String bodyHtml, String baseUri, Whitelist whitelist, Document.OutputSettings outputSettings) {
+        CleaningResult clean = cleanWithDetailedFeedback(bodyHtml, baseUri, whitelist);
+        clean.getCleanedDocument().outputSettings(outputSettings);
+        return clean;
     }
 
     /**

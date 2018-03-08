@@ -4,6 +4,7 @@ import org.jsoup.MultiLocaleRule;
 import org.jsoup.MultiLocaleRule.MultiLocaleTest;
 import org.jsoup.Jsoup;
 import org.jsoup.TextUtil;
+import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Entities;
 import org.junit.Rule;
@@ -24,13 +25,36 @@ public class CleanerTest {
 
         assertEquals("Hello <b>there</b>!", TextUtil.stripNewlines(cleanHtml));
     }
-    
-    @Test public void simpleBehaviourTest2() {
+
+    @Test public void simpleBehaviourTestWithDetailedFeedback() {
+        String h = "<div><p class=foo><a href='http://evil.com'>Hello <b id=bar>there</b>!</a></div>";
+        CleaningResult cleaningResult = Jsoup.cleanWithDetailedFeedback(h, Whitelist.simpleText());
+
+        assertEquals("Hello <b>there</b>!", TextUtil.stripNewlines(cleaningResult.getCleanedDocument().body().html()));
+        assertEquals("div", cleaningResult.getRemovedNodes().get(0).nodeName());
+        assertEquals("p", cleaningResult.getRemovedNodes().get(1).nodeName());
+        assertEquals("foo", cleaningResult.getRemovedNodes().get(1).attributes().get("class"));
+        assertEquals("a", cleaningResult.getRemovedNodes().get(2).nodeName());
+        assertEquals("http://evil.com", cleaningResult.getRemovedNodes().get(2).attributes().get("href"));
+        assertEquals(new Attribute("id", "bar"), cleaningResult.getRemovedAttributes().get(0));
+    }
+
+    @Test public void simpleBehaviourTestWithoutChanges() {
         String h = "Hello <b>there</b>!";
         String cleanHtml = Jsoup.clean(h, Whitelist.simpleText());
 
         assertEquals("Hello <b>there</b>!", TextUtil.stripNewlines(cleanHtml));
     }
+
+    @Test public void simpleBehaviourTestWithoutChangesAndDetailedFeedback() {
+        String h = "Hello <b>there</b>!";
+        CleaningResult cleaningResult = Jsoup.cleanWithDetailedFeedback(h, Whitelist.simpleText());
+
+        assertEquals("Hello <b>there</b>!", TextUtil.stripNewlines(cleaningResult.getCleanedDocument().body().html()));
+        assertEquals(0, cleaningResult.getRemovedNodes().size());
+        assertEquals(0, cleaningResult.getRemovedAttributes().size());
+    }
+
 
     @Test public void basicBehaviourTest() {
         String h = "<div><p><a href='javascript:sendAllMoney()'>Dodgy</a> <A HREF='HTTP://nice.com'>Nice</a></p><blockquote>Hello</blockquote>";
@@ -39,13 +63,13 @@ public class CleanerTest {
         assertEquals("<p><a rel=\"nofollow\">Dodgy</a> <a href=\"http://nice.com\" rel=\"nofollow\">Nice</a></p><blockquote>Hello</blockquote>",
                 TextUtil.stripNewlines(cleanHtml));
     }
-    
+
     @Test public void basicWithImagesTest() {
         String h = "<div><p><img src='http://example.com/' alt=Image></p><p><img src='ftp://ftp.example.com'></p></div>";
         String cleanHtml = Jsoup.clean(h, Whitelist.basicWithImages());
         assertEquals("<p><img src=\"http://example.com/\" alt=\"Image\"></p><p><img></p>", TextUtil.stripNewlines(cleanHtml));
     }
-    
+
     @Test public void testRelaxed() {
         String h = "<h1>Head</h1><table><tr><td>One<td>Two</td></tr></table>";
         String cleanHtml = Jsoup.clean(h, Whitelist.relaxed());
@@ -59,12 +83,31 @@ public class CleanerTest {
         assertEquals("<p>Nice</p><blockquote>Hello</blockquote>", TextUtil.stripNewlines(cleanHtml));
     }
 
+    @Test public void testRemoveTagsWithDetailedFeedback() {
+        String h = "<div><p><A HREF='HTTP://nice.com'>Nice</a></p><blockquote>Hello</blockquote>";
+        CleaningResult cleaningResult = Jsoup.cleanWithDetailedFeedback(h, Whitelist.basic().removeTags("a"));
+
+        assertEquals("<p>Nice</p><blockquote>Hello</blockquote>", TextUtil.stripNewlines(cleaningResult.getCleanedDocument().body().html()));
+        assertEquals("div", cleaningResult.getRemovedNodes().get(0).nodeName());
+        assertEquals("a", cleaningResult.getRemovedNodes().get(1).nodeName());
+    }
+
     @Test public void testRemoveAttributes() {
         String h = "<div><p>Nice</p><blockquote cite='http://example.com/quotations'>Hello</blockquote>";
         String cleanHtml = Jsoup.clean(h, Whitelist.basic().removeAttributes("blockquote", "cite"));
 
         assertEquals("<p>Nice</p><blockquote>Hello</blockquote>", TextUtil.stripNewlines(cleanHtml));
     }
+
+    @Test public void testRemoveAttributesWithDetailedFeedback() {
+        String h = "<div><p>Nice</p><blockquote cite='http://example.com/quotations'>Hello</blockquote>";
+        CleaningResult cleaningResult = Jsoup.cleanWithDetailedFeedback(h, Whitelist.basic().removeAttributes("blockquote", "cite"));
+
+        assertEquals("<p>Nice</p><blockquote>Hello</blockquote>", TextUtil.stripNewlines(cleaningResult.getCleanedDocument().body().html()));
+        assertEquals("div", cleaningResult.getRemovedNodes().get(0).nodeName());
+        assertEquals(new Attribute("cite", "http://example.com/quotations"), cleaningResult.getRemovedAttributes().get(0));
+    }
+
 
     @Test public void testRemoveEnforcedAttributes() {
         String h = "<div><p><A HREF='HTTP://nice.com'>Nice</a></p><blockquote>Hello</blockquote>";
@@ -98,25 +141,34 @@ public class CleanerTest {
         String cleanHtml = Jsoup.clean(h, Whitelist.relaxed());
         assertEquals("<p>Hello</p>", cleanHtml);
     }
-    
+
     @Test public void testDropXmlProc() {
         String h = "<?import namespace=\"xss\"><p>Hello</p>";
         String cleanHtml = Jsoup.clean(h, Whitelist.relaxed());
         assertEquals("<p>Hello</p>", cleanHtml);
     }
-    
+
     @Test public void testDropScript() {
         String h = "<SCRIPT SRC=//ha.ckers.org/.j><SCRIPT>alert(/XSS/.source)</SCRIPT>";
         String cleanHtml = Jsoup.clean(h, Whitelist.relaxed());
         assertEquals("", cleanHtml);
     }
-    
+
+    @Test public void testDropScriptWithDetailedFeedback() {
+        String h = "<SCRIPT SRC=//ha.ckers.org/.j><SCRIPT>alert(/XSS/.source)</SCRIPT>";
+        CleaningResult cleaningResult = Jsoup.cleanWithDetailedFeedback(h, Whitelist.relaxed());
+
+        assertEquals("", cleaningResult.getCleanedDocument().body().html());
+        assertEquals("script", cleaningResult.getRemovedNodes().get(0).nodeName());
+        assertEquals("//ha.ckers.org/.j", cleaningResult.getRemovedNodes().get(0).attributes().get("src"));
+    }
+
     @Test public void testDropImageScript() {
         String h = "<IMG SRC=\"javascript:alert('XSS')\">";
         String cleanHtml = Jsoup.clean(h, Whitelist.relaxed());
         assertEquals("<img>", cleanHtml);
     }
-    
+
     @Test public void testCleanJavascriptHref() {
         String h = "<A HREF=\"javascript:document.location='http://www.google.com/'\">XSS</A>";
         String cleanHtml = Jsoup.clean(h, Whitelist.relaxed());
@@ -150,7 +202,7 @@ public class CleanerTest {
         String cleanHtml = Jsoup.clean(h, Whitelist.relaxed());
         assertEquals("<p>Test</p>", cleanHtml);
     }
-    
+
     @Test public void testHandlesEmptyAttributes() {
         String h = "<img alt=\"\" src= unknown=''>";
         String cleanHtml = Jsoup.clean(h, Whitelist.basicWithImages());
@@ -190,7 +242,7 @@ public class CleanerTest {
         assertFalse(cleaner.isValid(Jsoup.parse(nok)));
         assertFalse(new Cleaner(Whitelist.none()).isValid(okDoc));
     }
-    
+
     @Test public void resolvesRelativeLinks() {
         String html = "<a href='/foo'>Link</a><img src='/bar'>";
         String clean = Jsoup.clean(html, "http://example.com/", Whitelist.basicWithImages());
@@ -202,7 +254,7 @@ public class CleanerTest {
         String clean = Jsoup.clean(html, "http://example.com/", Whitelist.basicWithImages().preserveRelativeLinks(true));
         assertEquals("<a href=\"/foo\" rel=\"nofollow\">Link</a>\n<img src=\"/bar\"> \n<img>", clean);
     }
-    
+
     @Test public void dropsUnresolvableRelativeLinks() {
         String html = "<a href='/foo'>Link</a>";
         String clean = Jsoup.clean(html, Whitelist.basic());
@@ -267,7 +319,7 @@ public class CleanerTest {
         assertEquals("", clean); // nothing good can come out of that
 
         Document dirtyDoc = Jsoup.parse(dirty);
-        Document cleanDoc = new Cleaner(Whitelist.basic()).clean(dirtyDoc);
+        Document cleanDoc = new Cleaner(Whitelist.basic()).clean(dirtyDoc).getCleanedDocument();
         assertFalse(cleanDoc == null);
         assertEquals(0, cleanDoc.body().childNodeSize());
     }
