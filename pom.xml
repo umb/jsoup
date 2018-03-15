@@ -164,15 +164,11 @@
   </build>
 
   <distributionManagement>
-    <snapshotRepository>
-      <id>sonatype-nexus-snapshots</id>
-      <name>Sonatype Nexus Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
+    <!-- credentials are loaded from settings.xml (usually in ~/.m2/repository/settings.xml)-->
     <repository>
-      <id>sonatype-nexus-staging</id>
-      <name>Nexus Release Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <id>curo-nexus</id>
+      <name>curo nexus</name>
+      <url>https://nexus.curo.umb.cloud/repository/maven-curo-releases</url>
     </repository>
   </distributionManagement>
 
