@@ -168,7 +168,7 @@
     <repository>
       <id>curo-nexus</id>
       <name>curo nexus</name>
-      <url>https://repo.umb.cloud/repository/maven-curo</url>
+      <url>https://repo.umb.cloud/repository/maven-curo-releases</url>
     </repository>
   </distributionManagement>
 
